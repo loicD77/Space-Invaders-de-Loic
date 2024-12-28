@@ -1,8 +1,6 @@
 package com.spaceinvaders.core;
 
-import com.spaceinvaders.entities.Alien;
-import com.spaceinvaders.entities.Bullet;
-import com.spaceinvaders.entities.Player;
+import com.spaceinvaders.entities.*;
 import com.spaceinvaders.render.Renderer;
 
 import java.util.ArrayList;
@@ -12,11 +10,16 @@ public class Game {
     private Player player;
     private AlienManager alienManager;
     private List<Bullet> playerBullets;
-    private List<Shield> shields; // Liste des boucliers
+    private List<Shield> shields;
+    private MysteryShip mysteryShip;
     private boolean moveLeft, moveRight, shooting;
     private int score = 0;
     private int lives = 3;
     private boolean isGameOver = false;
+
+    private float mysteryShipCooldown = 20.0f;
+    private float mysteryShipTimer = mysteryShipCooldown;
+    private boolean mysteryShipDirectionLeftToRight = true; // Alterner les directions
 
     public Game() {
         player = new Player(0.0f, -0.8f, 0.1f, 0.1f, new float[]{0.0f, 0.0f, 1.0f});
@@ -24,19 +27,18 @@ public class Game {
         playerBullets = new ArrayList<>();
         shields = new ArrayList<>();
 
-        // Initialisation des boucliers
         shields.add(new Shield(-0.6f, -0.6f, 0.2f, 0.1f, 3));
         shields.add(new Shield(0.0f, -0.6f, 0.2f, 0.1f, 3));
         shields.add(new Shield(0.6f, -0.6f, 0.2f, 0.1f, 3));
+
+        mysteryShip = new MysteryShip(-1.2f, 0.8f, 0.2f, 0.1f, 0.5f);
     }
 
     public void update(float delta) {
         if (isGameOver) return;
 
-        // Mise à jour du joueur
         player.update(moveLeft, moveRight, delta);
 
-        // Gestion des tirs du joueur
         if (shooting) {
             float bulletX = player.getX();
             float bulletY = player.getY() + player.getHeight() / 2;
@@ -44,18 +46,18 @@ public class Game {
             shooting = false;
         }
 
-        // Mise à jour des aliens
         alienManager.update(delta);
 
-        // Mise à jour des projectiles du joueur
+        if (alienManager.getAliens().isEmpty()) {
+            alienManager.resetAliens();
+        }
+
         for (Bullet bullet : new ArrayList<>(playerBullets)) {
             bullet.update(delta);
 
-            // Supprimer les projectiles hors écran
             if (bullet.isOffScreen()) {
                 playerBullets.remove(bullet);
             } else {
-                // Gérer les collisions avec les boucliers
                 for (Shield shield : shields) {
                     if (shield.checkCollision(bullet.getX(), bullet.getY())) {
                         shield.takeDamage();
@@ -64,19 +66,25 @@ public class Game {
                     }
                 }
 
-                // Gérer les collisions avec les aliens
                 for (Alien alien : new ArrayList<>(alienManager.getAliens())) {
                     if (bullet.collidesWith(alien)) {
                         playerBullets.remove(bullet);
                         alienManager.getAliens().remove(alien);
-                        score += 10; // Ajout de points au score
+                        score += 10;
                         break;
                     }
+                }
+
+                if (mysteryShip.isActive() && mysteryShip.checkCollision(bullet.getX(), bullet.getY())) {
+                    score += 200;
+                    playerBullets.remove(bullet);
+                    mysteryShip.deactivate();
+                    mysteryShipTimer = mysteryShipCooldown;
+                    break;
                 }
             }
         }
 
-        // Gérer les collisions des projectiles des aliens avec le joueur ou les boucliers
         for (Bullet alienBullet : new ArrayList<>(alienManager.getAlienBullets())) {
             if (alienBullet.collidesWith(player)) {
                 alienManager.getAlienBullets().remove(alienBullet);
@@ -86,7 +94,6 @@ public class Game {
                 }
                 break;
             } else {
-                // Gérer les collisions des projectiles aliens avec les boucliers
                 for (Shield shield : shields) {
                     if (shield.checkCollision(alienBullet.getX(), alienBullet.getY())) {
                         shield.takeDamage();
@@ -97,8 +104,21 @@ public class Game {
             }
         }
 
-        // Supprimer les boucliers détruits
         shields.removeIf(Shield::isDestroyed);
+
+        if (!mysteryShip.isActive()) {
+            mysteryShipTimer -= delta;
+            if (mysteryShipTimer <= 0) {
+                float spawnPosition = mysteryShipDirectionLeftToRight ? -1.2f : 1.2f;
+                float directionSpeed = mysteryShipDirectionLeftToRight ? 0.5f : -0.5f;
+                mysteryShip.spawn(spawnPosition, directionSpeed);
+
+                mysteryShipTimer = mysteryShipCooldown;
+                mysteryShipDirectionLeftToRight = !mysteryShipDirectionLeftToRight;
+            }
+        }
+
+        mysteryShip.update(delta);
     }
 
     public void render(Renderer renderer) {
@@ -108,26 +128,20 @@ public class Game {
             return;
         }
 
-        // Rendu du sol
-        renderer.drawGround(-0.95f, new float[]{0.0f, 1.0f, 0.0f}); // Sol vert
-
-        // Rendu du joueur
+        renderer.drawGround(-0.95f, new float[]{0.0f, 1.0f, 0.0f});
         player.render(renderer);
-
-        // Rendu des aliens
         alienManager.render(renderer);
 
-        // Rendu des projectiles du joueur
         for (Bullet bullet : playerBullets) {
             bullet.render(renderer);
         }
 
-        // Rendu des boucliers
         for (Shield shield : shields) {
             shield.render(renderer);
         }
 
-        // Affichage du score et des vies
+        mysteryShip.render(renderer);
+
         renderer.drawText("SCORE: " + score, -0.9f, 0.9f, 0.05f, new float[]{1.0f, 1.0f, 1.0f});
         renderer.drawText("LIVES: " + lives, 0.5f, 0.9f, 0.05f, new float[]{1.0f, 1.0f, 1.0f});
     }

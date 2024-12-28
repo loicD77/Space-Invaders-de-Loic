@@ -4,6 +4,7 @@ import com.spaceinvaders.render.Renderer;
 
 public class Bullet {
     private float x, y;
+    private float prevX, prevY; // Position précédente pour la détection de trajectoire
     private float width, height;
     private float speed;
     private float[] color;
@@ -11,6 +12,8 @@ public class Bullet {
     public Bullet(float x, float y, float speed, float[] color) {
         this.x = x;
         this.y = y;
+        this.prevX = x; // Initialiser la position précédente
+        this.prevY = y;
         this.width = 0.02f;
         this.height = 0.05f;
         this.speed = speed;
@@ -18,6 +21,8 @@ public class Bullet {
     }
 
     public void update(float delta) {
+        prevX = x; // Met à jour la position précédente avant de déplacer
+        prevY = y;
         y += speed * delta;
     }
 
@@ -51,4 +56,11 @@ public class Bullet {
         return y;
     }
 
+    public float getPrevX() {
+        return prevX;
+    }
+
+    public float getPrevY() {
+        return prevY;
+    }
 }
