@@ -1,8 +1,6 @@
 package com.spaceinvaders.core;
 
-import com.spaceinvaders.entities.Alien;
-import com.spaceinvaders.entities.Bullet;
-import com.spaceinvaders.entities.MysteryShip;
+import com.spaceinvaders.entities.*;
 import com.spaceinvaders.render.Renderer;
 
 import java.util.ArrayList;
@@ -29,7 +27,12 @@ public class AlienManager {
         aliens = new ArrayList<>();
         alienBullets = new ArrayList<>();
         random = new Random();
+        initializeAliens();
+        mysteryShip = new MysteryShip(-1.2f, 0.8f, 0.2f, 0.1f, 0.5f);
+    }
 
+    private void initializeAliens() {
+        aliens.clear();
         float[][] colors = {
                 {1.0f, 0.0f, 0.0f},
                 {0.0f, 1.0f, 0.0f},
@@ -41,11 +44,9 @@ public class AlienManager {
                 aliens.add(new Alien(-0.8f + col * 0.3f, 0.6f - row * 0.2f, 0.1f, 0.1f, colors[row]));
             }
         }
-
-        mysteryShip = new MysteryShip(-1.2f, 0.8f, 0.2f, 0.1f, 0.5f);
     }
 
-    public void update(float delta) {
+    public void update(float delta, List<Shield> shields) {
         reachedEdge = false;
 
         for (Alien alien : aliens) {
@@ -63,6 +64,10 @@ public class AlienManager {
             alien.update(delta, movingRight);
         }
 
+        if (reachedEdge) {
+            movingRight = !movingRight;
+        }
+
         alienShootTimer -= delta;
         if (alienShootTimer <= 0) {
             spawnAlienProjectiles();
@@ -71,7 +76,6 @@ public class AlienManager {
 
         for (Bullet bullet : new ArrayList<>(alienBullets)) {
             bullet.update(delta);
-
             if (bullet.isOffScreen()) {
                 alienBullets.remove(bullet);
             }
@@ -79,17 +83,13 @@ public class AlienManager {
 
         mysteryShipTimer -= delta;
         if (mysteryShipTimer <= 0 && !mysteryShip.isActive()) {
-            float spawnPosition = Math.random() < 0.5 ? -1.2f : 1.2f; // Détermine la position initiale
-            float directionSpeed = spawnPosition < 0 ? 0.5f : -0.5f;  // Détermine la vitesse en fonction de la position
-            mysteryShip.spawn(spawnPosition, directionSpeed);         // Appelle spawn avec les deux paramètres
+            float spawnPosition = Math.random() < 0.5 ? -1.2f : 1.2f;
+            float directionSpeed = spawnPosition < 0 ? 0.5f : -0.5f;
+            mysteryShip.spawn(spawnPosition, directionSpeed);
             mysteryShipTimer = mysteryShipCooldown;
         }
 
         mysteryShip.update(delta);
-
-        if (reachedEdge) {
-            movingRight = !movingRight;
-        }
     }
 
     public void render(Renderer renderer) {
@@ -103,19 +103,7 @@ public class AlienManager {
     }
 
     public void resetAliens() {
-        aliens.clear();
-        float[][] colors = {
-                {1.0f, 0.0f, 0.0f},
-                {0.0f, 1.0f, 0.0f},
-                {0.0f, 0.0f, 1.0f}
-        };
-
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 5; col++) {
-                aliens.add(new Alien(-0.8f + col * 0.3f, 0.6f - row * 0.2f, 0.1f, 0.1f, colors[row]));
-            }
-        }
-
+        initializeAliens();
         speed += 0.05f;
         alienShootCooldown = Math.max(0.5f, alienShootCooldown - 0.1f);
     }
@@ -130,6 +118,15 @@ public class AlienManager {
 
     public MysteryShip getMysteryShip() {
         return mysteryShip;
+    }
+
+    public boolean areAliensAtPlayerLevel(float playerY) {
+        for (Alien alien : aliens) {
+            if (alien.getY() <= playerY + 0.1f) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void spawnAlienProjectiles() {

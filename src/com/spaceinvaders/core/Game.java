@@ -49,9 +49,19 @@ public class Game {
         player.update(moveLeft, moveRight, delta);
 
         handlePlayerShooting();
-        alienManager.update(delta);
+        alienManager.update(delta, shields);
         handlePlayerBullets(delta);
         handleAlienBullets();
+
+        // Vérifie si tous les aliens sont détruits pour déclencher une nouvelle vague
+        if (alienManager.getAliens().isEmpty()) {
+            alienManager.resetAliens();
+        }
+
+        // Vérifie si un alien atteint le niveau du joueur pour déclencher le Game Over
+        if (alienManager.areAliensAtPlayerLevel(player.getY())) {
+            isGameOver = true;
+        }
 
         shields.removeIf(Shield::isDestroyed);
         handleMysteryShip(delta);
@@ -132,13 +142,6 @@ public class Game {
                     alienManager.getAlienBullets().remove(alienBullet);
                     SoundPlayer.playSoundAsync("res/sounds/impact.wav");
                     return;
-                }
-            }
-
-            for (Shield shield : shields) {
-                if (alienBullet.getY() <= shield.getY() + shield.getHeight() &&
-                        alienBullet.getY() >= shield.getY()) {
-                    alienBullet.changeColor(new float[]{0.0f, 1.0f, 0.0f});
                 }
             }
         }
