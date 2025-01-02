@@ -48,6 +48,10 @@ public class Bullet {
                 y + height > player.getY();
     }
 
+    public void changeColor(float[] newColor) {
+        this.color = newColor;
+    }
+
     public float getX() {
         return x;
     }

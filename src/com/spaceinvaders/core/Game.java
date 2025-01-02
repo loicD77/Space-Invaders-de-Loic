@@ -2,6 +2,7 @@ package com.spaceinvaders.core;
 
 import com.spaceinvaders.entities.*;
 import com.spaceinvaders.render.Renderer;
+import com.spaceinvaders.sound.SoundPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,19 +20,27 @@ public class Game {
 
     private float mysteryShipCooldown = 20.0f;
     private float mysteryShipTimer = mysteryShipCooldown;
-    private boolean mysteryShipDirectionLeftToRight = true; // Alterner les directions
+    private boolean mysteryShipDirectionLeftToRight = true;
 
     public Game() {
+        initializeGame();
+    }
+
+    private void initializeGame() {
         player = new Player(0.0f, -0.8f, 0.1f, 0.1f, new float[]{0.0f, 0.0f, 1.0f});
         alienManager = new AlienManager();
         playerBullets = new ArrayList<>();
-        shields = new ArrayList<>();
-
-        shields.add(new Shield(-0.6f, -0.6f, 0.2f, 0.1f, 3));
-        shields.add(new Shield(0.0f, -0.6f, 0.2f, 0.1f, 3));
-        shields.add(new Shield(0.6f, -0.6f, 0.2f, 0.1f, 3));
-
+        shields = initializeShields();
         mysteryShip = new MysteryShip(-1.2f, 0.8f, 0.2f, 0.1f, 0.5f);
+    }
+
+    private List<Shield> initializeShields() {
+        List<Shield> shields = new ArrayList<>();
+        shields.add(new Shield(-0.75f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(-0.25f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(0.25f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(0.75f, -0.6f, 0.2f, 0.1f, 3));
+        return shields;
     }
 
     public void update(float delta) {
@@ -39,73 +48,103 @@ public class Game {
 
         player.update(moveLeft, moveRight, delta);
 
+        handlePlayerShooting();
+        alienManager.update(delta);
+        handlePlayerBullets(delta);
+        handleAlienBullets();
+
+        shields.removeIf(Shield::isDestroyed);
+        handleMysteryShip(delta);
+    }
+
+    private void handlePlayerShooting() {
         if (shooting) {
             float bulletX = player.getX();
             float bulletY = player.getY() + player.getHeight() / 2;
             playerBullets.add(new Bullet(bulletX, bulletY, 0.5f, new float[]{1.0f, 1.0f, 1.0f}));
+            SoundPlayer.playSoundAsync("res/sounds/laser.wav");
             shooting = false;
         }
+    }
 
-        alienManager.update(delta);
-
-        if (alienManager.getAliens().isEmpty()) {
-            alienManager.resetAliens();
-        }
-
+    private void handlePlayerBullets(float delta) {
         for (Bullet bullet : new ArrayList<>(playerBullets)) {
             bullet.update(delta);
 
             if (bullet.isOffScreen()) {
                 playerBullets.remove(bullet);
             } else {
-                for (Shield shield : shields) {
-                    if (shield.checkCollision(bullet.getX(), bullet.getY())) {
-                        shield.takeDamage();
-                        playerBullets.remove(bullet);
-                        break;
-                    }
-                }
+                checkBulletCollisions(bullet);
+            }
+        }
+    }
 
-                for (Alien alien : new ArrayList<>(alienManager.getAliens())) {
-                    if (bullet.collidesWith(alien)) {
-                        playerBullets.remove(bullet);
-                        alienManager.getAliens().remove(alien);
-                        score += 10;
-                        break;
-                    }
-                }
-
-                if (mysteryShip.isActive() && mysteryShip.checkCollision(bullet.getX(), bullet.getY())) {
-                    score += 200;
-                    playerBullets.remove(bullet);
-                    mysteryShip.deactivate();
-                    mysteryShipTimer = mysteryShipCooldown;
-                    break;
-                }
+    private void checkBulletCollisions(Bullet bullet) {
+        for (Shield shield : shields) {
+            if (shield.checkCollision(bullet.getX(), bullet.getY())) {
+                shield.takeDamage();
+                playerBullets.remove(bullet);
+                SoundPlayer.playSoundAsync("res/sounds/impact.wav");
+                return;
             }
         }
 
+        for (Alien alien : new ArrayList<>(alienManager.getAliens())) {
+            if (bullet.collidesWith(alien)) {
+                playerBullets.remove(bullet);
+                alienManager.getAliens().remove(alien);
+                score += 10;
+                SoundPlayer.playSoundAsync("res/sounds/explosion.wav");
+                return;
+            }
+        }
+
+        if (bullet.getY() <= -0.95f) {
+            playerBullets.remove(bullet);
+            SoundPlayer.playSoundAsync("res/sounds/impact.wav");
+        } else if (mysteryShip.isActive() && mysteryShip.checkCollision(bullet.getX(), bullet.getY())) {
+            score += 200;
+            playerBullets.remove(bullet);
+            mysteryShip.deactivate();
+            mysteryShipTimer = mysteryShipCooldown;
+            SoundPlayer.playSoundAsync("res/sounds/explosion.wav");
+        }
+    }
+
+    private void handleAlienBullets() {
         for (Bullet alienBullet : new ArrayList<>(alienManager.getAlienBullets())) {
+            if (alienBullet.getY() <= -0.91f) {
+                alienManager.getAlienBullets().remove(alienBullet);
+                SoundPlayer.playSoundAsync("res/sounds/impact.wav");
+                continue;
+            }
+
             if (alienBullet.collidesWith(player)) {
                 alienManager.getAlienBullets().remove(alienBullet);
                 lives--;
-                if (lives <= 0) {
-                    isGameOver = true;
+                if (lives <= 0) isGameOver = true;
+                return;
+            }
+
+            for (Shield shield : shields) {
+                if (shield.checkCollision(alienBullet.getX(), alienBullet.getY())) {
+                    shield.takeDamage();
+                    alienManager.getAlienBullets().remove(alienBullet);
+                    SoundPlayer.playSoundAsync("res/sounds/impact.wav");
+                    return;
                 }
-                break;
-            } else {
-                for (Shield shield : shields) {
-                    if (shield.checkCollision(alienBullet.getX(), alienBullet.getY())) {
-                        shield.takeDamage();
-                        alienManager.getAlienBullets().remove(alienBullet);
-                        break;
-                    }
+            }
+
+            for (Shield shield : shields) {
+                if (alienBullet.getY() <= shield.getY() + shield.getHeight() &&
+                        alienBullet.getY() >= shield.getY()) {
+                    alienBullet.changeColor(new float[]{0.0f, 1.0f, 0.0f});
                 }
             }
         }
+    }
 
-        shields.removeIf(Shield::isDestroyed);
-
+    private void handleMysteryShip(float delta) {
         if (!mysteryShip.isActive()) {
             mysteryShipTimer -= delta;
             if (mysteryShipTimer <= 0) {
@@ -117,17 +156,23 @@ public class Game {
                 mysteryShipDirectionLeftToRight = !mysteryShipDirectionLeftToRight;
             }
         }
-
         mysteryShip.update(delta);
     }
 
     public void render(Renderer renderer) {
         if (isGameOver) {
-            renderer.drawText("GAME OVER", -0.4f, 0.0f, 0.1f, new float[]{1.0f, 0.0f, 0.0f});
-            renderer.drawText("SCORE: " + score, -0.3f, -0.2f, 0.05f, new float[]{1.0f, 1.0f, 1.0f});
-            return;
+            renderGameOver(renderer);
+        } else {
+            renderGame(renderer);
         }
+    }
 
+    private void renderGameOver(Renderer renderer) {
+        renderer.drawText("GAME OVER", -0.4f, 0.0f, 0.1f, new float[]{1.0f, 0.0f, 0.0f});
+        renderer.drawText("SCORE: " + score, -0.3f, -0.2f, 0.05f, new float[]{1.0f, 1.0f, 1.0f});
+    }
+
+    private void renderGame(Renderer renderer) {
         renderer.drawGround(-0.95f, new float[]{0.0f, 1.0f, 0.0f});
         player.render(renderer);
         alienManager.render(renderer);

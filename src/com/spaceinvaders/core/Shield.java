@@ -1,38 +1,66 @@
-package com.spaceinvaders.core;
+package com.spaceinvaders.entities;
 
 import com.spaceinvaders.render.Renderer;
 
 public class Shield {
-    private float x, y, width, height;
-    private int durability;
+    private float x, y;
+    private float width, height;
+    private int health;
 
-    public Shield(float x, float y, float width, float height, int durability) {
+    public Shield(float x, float y, float width, float height, int health) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.durability = durability;
-    }
-
-    // Méthode render avec le paramètre Renderer
-    public void render(Renderer renderer) {
-        if (durability > 0) {
-            renderer.drawShield(x, y, width, height, durability);
-        }
+        this.health = health;
     }
 
     public void takeDamage() {
-        if (durability > 0) {
-            durability--;
+        if (health > 0) {
+            health--;
         }
     }
 
     public boolean isDestroyed() {
-        return durability <= 0;
+        return health <= 0;
     }
 
-    public boolean checkCollision(float px, float py) {
-        return px >= x - width / 2 && px <= x + width / 2 &&
-                py >= y - height / 2 && py <= y + height / 2;
+    public boolean checkCollision(float bulletX, float bulletY) {
+        return bulletX > x && bulletX < x + width && bulletY > y && bulletY < y + height;
+    }
+
+    public void render(Renderer renderer) {
+        if (health > 0) {
+            float[] color = getColorBasedOnHealth();
+            renderer.drawRect(x, y, width, height, color);
+        }
+    }
+
+    private float[] getColorBasedOnHealth() {
+        if (health == 3) {
+            return new float[]{0.0f, 1.0f, 0.0f}; // Vert
+        } else if (health == 2) {
+            return new float[]{1.0f, 1.0f, 0.0f}; // Jaune
+        } else if (health == 1) {
+            return new float[]{1.0f, 0.0f, 0.0f}; // Rouge
+        }
+        return new float[]{0.0f, 0.0f, 0.0f}; // Invisible
+    }
+
+    // Ajout des méthodes nécessaires
+    public float getY() {
+        return y;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getWidth() {
+        return width;
     }
 }
