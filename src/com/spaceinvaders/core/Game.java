@@ -36,10 +36,17 @@ public class Game {
 
     private List<Shield> initializeShields() {
         List<Shield> shields = new ArrayList<>();
+<<<<<<< HEAD
         shields.add(new Shield(-0.75f, -0.6f, 0.2f, 0.1f, 5, 10));
         shields.add(new Shield(-0.25f, -0.6f, 0.2f, 0.1f, 5, 10));
         shields.add(new Shield(0.25f, -0.6f, 0.2f, 0.1f, 5, 10));
         shields.add(new Shield(0.75f, -0.6f, 0.2f, 0.1f, 5, 10));
+=======
+        shields.add(new Shield(-0.75f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(-0.25f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(0.25f, -0.6f, 0.2f, 0.1f, 3));
+        shields.add(new Shield(0.75f, -0.6f, 0.2f, 0.1f, 3));
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
         return shields;
     }
 
@@ -53,15 +60,27 @@ public class Game {
         handlePlayerBullets(delta);
         handleAlienBullets();
 
+<<<<<<< HEAD
+=======
+        // Vérifie si tous les aliens sont détruits pour déclencher une nouvelle vague
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
         if (alienManager.getAliens().isEmpty()) {
             alienManager.resetAliens();
         }
 
+<<<<<<< HEAD
+=======
+        // Vérifie si un alien atteint le niveau du joueur pour déclencher le Game Over
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
         if (alienManager.areAliensAtPlayerLevel(player.getY())) {
             isGameOver = true;
         }
 
+<<<<<<< HEAD
         shields.removeIf(Shield::isFullyDestroyed);
+=======
+        shields.removeIf(Shield::isDestroyed);
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
         handleMysteryShip(delta);
     }
 
@@ -90,6 +109,10 @@ public class Game {
     private void checkBulletCollisions(Bullet bullet) {
         for (Shield shield : shields) {
             if (shield.checkCollision(bullet.getX(), bullet.getY())) {
+<<<<<<< HEAD
+=======
+                shield.takeDamage();
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
                 playerBullets.remove(bullet);
                 SoundPlayer.playSoundAsync("res/sounds/impact.wav");
                 return;
@@ -135,6 +158,10 @@ public class Game {
 
             for (Shield shield : shields) {
                 if (shield.checkCollision(alienBullet.getX(), alienBullet.getY())) {
+<<<<<<< HEAD
+=======
+                    shield.takeDamage();
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
                     alienManager.getAlienBullets().remove(alienBullet);
                     SoundPlayer.playSoundAsync("res/sounds/impact.wav");
                     return;

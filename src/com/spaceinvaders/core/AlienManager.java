@@ -19,11 +19,22 @@ public class AlienManager {
     private float alienShootCooldown = 2.0f;
     private float alienShootTimer = 0.0f;
 
+<<<<<<< HEAD
+=======
+    private MysteryShip mysteryShip;
+    private float mysteryShipCooldown = 10.0f;
+    private float mysteryShipTimer = 0.0f;
+
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
     public AlienManager() {
         aliens = new ArrayList<>();
         alienBullets = new ArrayList<>();
         random = new Random();
         initializeAliens();
+<<<<<<< HEAD
+=======
+        mysteryShip = new MysteryShip(-1.2f, 0.8f, 0.2f, 0.1f, 0.5f);
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
     }
 
     private void initializeAliens() {
@@ -75,6 +86,19 @@ public class AlienManager {
                 alienBullets.remove(bullet);
             }
         }
+<<<<<<< HEAD
+=======
+
+        mysteryShipTimer -= delta;
+        if (mysteryShipTimer <= 0 && !mysteryShip.isActive()) {
+            float spawnPosition = Math.random() < 0.5 ? -1.2f : 1.2f;
+            float directionSpeed = spawnPosition < 0 ? 0.5f : -0.5f;
+            mysteryShip.spawn(spawnPosition, directionSpeed);
+            mysteryShipTimer = mysteryShipCooldown;
+        }
+
+        mysteryShip.update(delta);
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
     }
 
     public void render(Renderer renderer) {
@@ -84,6 +108,10 @@ public class AlienManager {
         for (Bullet bullet : alienBullets) {
             bullet.render(renderer);
         }
+<<<<<<< HEAD
+=======
+        mysteryShip.render(renderer);
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
     }
 
     public void resetAliens() {
@@ -100,9 +128,19 @@ public class AlienManager {
         return alienBullets;
     }
 
+<<<<<<< HEAD
     public boolean areAliensAtPlayerLevel(float playerY) {
         for (Alien alien : aliens) {
             if (alien.getY() <= playerY + alien.getHeight()) {
+=======
+    public MysteryShip getMysteryShip() {
+        return mysteryShip;
+    }
+
+    public boolean areAliensAtPlayerLevel(float playerY) {
+        for (Alien alien : aliens) {
+            if (alien.getY() <= playerY + 0.1f) {
+>>>>>>> f6ecbdeb7f14403636951663fbdc6cba695fe0ed
                 return true;
             }
         }
